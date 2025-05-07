@@ -1,27 +1,150 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Your Cart</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: brown;
+      padding: 40px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #343a40;
+    }
+
+    table {
+      width: 80%;
+      max-width: 600px;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 12px 20px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f1f1;
+    }
+
+    .total-row {
+      font-weight: bold;
+    }
+
+    button {
+      display: block;
+      margin: 30px auto;
+      padding: 10px 30px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .empty-cart {
+      text-align: center;
+      color: #888;
+    }
+  </style>
 </head>
 <body>
+
   <h1>Your Cart</h1>
-  <div id="cart-items"></div>
+
+  <div id="cart-container">
+    <table id="cart-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Price ($)</th>
+        </tr>
+      </thead>
+      <tbody id="cart-items"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td>Total</td>
+          <td id="total-price">0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+    <p id="empty-message" class="empty-cart"></p>
+  </div>
+
   <button onclick="checkout()">Checkout</button>
+
   <script>
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    document.getElementById("cart-items").innerText = JSON.stringify(cart, null, 2);
 
+    // Elements
+    const cartItemsElement = document.getElementById("cart-items");
+    const totalPriceElement = document.getElementById("total-price");
+    const emptyMessageElement = document.getElementById("empty-message");
+
+    let totalPrice = 0;
+
+    // Check if the cart is empty
+    if (cart.length === 0) {
+      emptyMessageElement.textContent = "Your cart is empty. Add items to your cart to proceed.";
+      document.getElementById("cart-container").style.display = "none";
+    } else {
+      // Populate the cart table
+      cart.forEach(item => {
+        const row = document.createElement("tr");
+
+        const itemName = document.createElement("td");
+        itemName.textContent = item.name;
+        row.appendChild(itemName);
+
+        const itemPrice = document.createElement("td");
+        itemPrice.textContent = item.price.toFixed(2);
+        row.appendChild(itemPrice);
+
+        cartItemsElement.appendChild(row);
+
+        totalPrice += item.price;
+      });
+
+      // Display total price
+      totalPriceElement.textContent = totalPrice.toFixed(2);
+    }
+
+    // Checkout function
     function checkout() {
-      fetch('/order', {
+      fetch('/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cart })
+        body: JSON.stringify({ items: cart })
       })
       .then(res => res.json())
-      .then(data => alert("Order placed!"))
-      .catch(err => console.error(err));
+      .then(data => {
+        if (data.url) {
+          window.location.href = data.url; // Redirect to success page
+        } else {
+          alert("Checkout session failed.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("There was an error processing your checkout.");
+      });
     }
   </script>
+
 </body>
 </html>
